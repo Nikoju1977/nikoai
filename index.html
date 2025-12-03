@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIKO AI | Medtronic Strategic Proposal</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CORE VARIABLES --- */
+        :root {
+            --medtronic-blue: #002554;
+            --niko-primary: #00A3E0;
+            --niko-dark: #0077a3;
+            --niko-accent: #78BE20;
+            --danger: #D43F3A;
+            --bg-light: #F8FDFF;
+            --text-main: #1A1A1A;
+            --code-bg: #1e1e1e;
+        }
+
+        /* --- PERFORMANCE RESET --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-light); color: var(--text-main); line-height: 1.5; overflow-x: hidden; }
+
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- UI COMPONENTS --- */
+        header {
+            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
+            padding: 12px 40px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: var(--medtronic-blue); }
+        .logo span { color: var(--niko-primary); }
+
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+        .lang-btn { background: none; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.75rem; transition: 0.2s; }
+        .lang-btn.active { background: var(--medtronic-blue); color: white; border-color: var(--medtronic-blue); }
+        
+        .confidential-btn {
+            background: var(--medtronic-blue); color: white; padding: 8px 18px; border-radius: 6px; font-size: 0.8rem;
+            font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .confidential-btn:hover { background: #003366; box-shadow: 0 4px 10px rgba(0,37,84,0.2); }
+        .confidential-btn.unlocked { background: var(--niko-accent); pointer-events: none; }
+
+        /* --- NAVIGATION --- */
+        #main-nav { background: #fff; border-bottom: 1px solid #ddd; display: none; justify-content: center; gap: 5px; padding: 0 20px; }
+        .nav-item { padding: 15px 20px; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 600; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; transition: 0.2s; }
+        .nav-item:hover { color: var(--medtronic-blue); background: #f8f9fa; }
+        .nav-item.active { border-bottom-color: var(--niko-primary); color: var(--medtronic-blue); }
+        .nav-item.pres-mode { color: var(--niko-primary); border: 1px solid rgba(0, 163, 224, 0.3); border-radius: 4px; padding: 8px 15px; margin-top: 5px; margin-bottom: 5px; }
+        .nav-item.pres-mode:hover { background: var(--niko-primary); color: white; }
+
+        /* --- LAYOUTS --- */
+        .view-section { display: none; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
+        .view-section.active { display: block; animation: fadeIn 0.4s ease-out; }
+
+        .hero { text-align: center; margin-bottom: 50px; }
+        .hero h1 { font-size: 3.2rem; color: var(--medtronic-blue); margin-bottom: 15px; line-height: 1.1; letter-spacing: -1px; }
+        .btn-cta { background: var(--niko-primary); color: white; padding: 14px 40px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 20px rgba(0,163,224,0.3); font-size: 1rem; transition: transform 0.2s; }
+        .btn-cta:hover { transform: translateY(-2px); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .chart-box { background: white; padding: 15px; border-radius: 12px; border: 1px solid #eee; height: 350px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .tech-card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s; }
+        .tech-card:hover { transform: translateY(-3px); }
+        .tech-card.niko { border-color: var(--niko-primary); background: #f4fcff; }
+
+        /* --- TECHNICAL DOCS --- */
+        .doc-sheet { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 20px rgba(0,0,0,0.06); border-top: 5px solid var(--medtronic-blue); }
+        .arch-diagram { display: flex; gap: 15px; margin: 30px 0; align-items: stretch; }
+        .arch-layer { flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 8px; text-align: center; background: #fafafa; }
+        .arch-layer.niko-layer { background: #eefbff; border: 2px solid var(--niko-primary); color: var(--medtronic-blue); font-weight: bold; }
+
+        pre { background: var(--code-bg); color: #d4d4d4; padding: 20px; border-radius: 8px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; border: 1px solid #333; }
+        .kwd { color: #569cd6; } .com { color: #6a9955; } .typ { color: #4ec9b0; }
+
+        /* --- PRESENTATION MODE --- */
+        #presentation-mode { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; z-index: 5000; display: none; flex-direction: column; }
+        .slide { flex: 1; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; animation: fadeIn 0.5s; }
+        .slide.active { display: flex; }
+        .slide-content { max-width: 900px; }
+        .pres-controls { height: 70px; background: var(--medtronic-blue); display: flex; justify-content: space-between; align-items: center; padding: 0 40px; color: white; }
+        .pres-btn { background: rgba(255,255,255,0.15); border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .pres-btn:hover { background: rgba(255,255,255,0.3); }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,37,84,0.9); z-index: 9999; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .modal-content { background: #fff; padding: 40px; border-radius: 16px; text-align: center; max-width: 420px; width: 90%; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .access-input { width: 100%; padding: 12px; font-size: 1.2rem; text-align: center; margin: 20px 0; border: 2px solid #ddd; border-radius: 8px; font-family: 'JetBrains Mono', monospace; }
+        
+        /* --- GOOGLE TRANSLATE HIDE --- */
+        .goog-te-banner-frame { display: none !important; } body { top: 0 !important; }
+    </style>
+</head>
+<body>
+
+    <div id="securityModal" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-shield-alt fa-3x" style="color:var(--medtronic-blue); margin-bottom:20px;"></i>
+            <h2 style="color: var(--medtronic-blue); margin-bottom: 5px;" data-i18n="auth_title">Accès Ingénierie</h2>
+            <p style="color: #666; font-size:0.9rem;" data-i18n="auth_sub">Portail sécurisé R&D Medtronic.</p>
+            <input type="password" id="access-code" class="access-input" placeholder="CODE (780G)" value="780G">
+            <button class="btn-cta" style="width:100%" onclick="verifyAccess()" data-i18n="auth_btn">Authentifier</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">NIKO <span>AI</span></div>
+        <div class="header-controls">
+            <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+            <button class="lang-btn" onclick="setLang('en')">EN</button>
+            <div id="google_translate_element" style="opacity:0; width:1px; height:1px; overflow:hidden;"></div>
+            <button id="confidentialBtn" class="confidential-btn" onclick="openSecurity()">
+                <i class="fas fa-lock"></i> <span id="btnText" data-i18n="lock_btn">Engineering Access</span>
+            </button>
+        </div>
+    </header>
+
+    <nav id="main-nav">
+        <div class="nav-item active" onclick="switchView('vision')" data-i18n="nav_1">1. VISION</div>
+        <div class="nav-item" onclick="switchView('dashboard')" data-i18n="nav_2">2. CONSOLE R&D</div>
+        <div class="nav-item" onclick="switchView('protocol')" data-i18n="nav_3">3. PROTOCOLE</div>
+        <div class="nav-item pres-mode" onclick="startPresentation()"><i class="fas fa-play"></i> PRESENTATION</div>
+    </nav>
+
+    <div id="vision" class="view-section active">
+        <div class="hero">
+            <div style="color:var(--niko-primary); font-weight:700; letter-spacing:1px; font-size:0.8rem; margin-bottom:10px;">CONFIDENTIAL - CLASS III CONCEPT</div>
+            <h1 data-i18n="hero_title">Mise à jour Causale <br>pour Architecture 780G</h1>
+            <p style="font-size: 1.2rem; color: #555; max-width: 700px; margin: 0 auto 30px;" data-i18n="hero_desc">
+                Le protocole pour intégrer le moteur d'inférence NIKO comme superviseur de sécurité sur les contrôleurs MPC existants.
+            </p>
+            <button class="btn-cta" onclick="startMarketingDemo()" data-i18n="hero_cta">Lancer la Comparaison</button>
+        </div>
+
+        <div class="grid-2">
+            <div class="chart-box">
+                <canvas id="marketingChart"></canvas>
+            </div>
+            <div>
+                <div class="tech-card">
+                    <h3 data-i18n="card1_title"><i class="fas fa-exclamation-triangle" style="color:#888"></i> Limite SmartGuard™</h3>
+                    <p data-i18n="card1_desc">Réagit aux symptômes (déviation). Latence de 15-20 min sur événements soudains.</p>
+                </div>
+                <div class="tech-card niko">
+                    <h3 data-i18n="card2_title"><i class="fas fa-check-circle" style="color:var(--niko-primary)"></i> Solution NIKO</h3>
+                    <p data-i18n="card2_desc">Inférence Causale ($do$-calculus). Isole la cause racine. Freinage 45 min avant l'hypo.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="view-section">
+        <div class="doc-sheet" style="padding: 30px; border-color: var(--niko-primary);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h2 style="color:var(--medtronic-blue)" data-i18n="dash_title">Console R&D : Hardware-in-the-Loop</h2>
+                <div style="color:var(--niko-accent); font-weight:bold;"><i class="fas fa-circle fa-xs"></i> LIVE</div>
+            </div>
+            
+            <div class="grid-2">
+                <div>
+                    <div class="chart-box" style="height: 320px; border:1px solid #ddd;">
+                        <div id="shield-indicator" style="position: absolute; top: 10px; right: 10px; background: rgba(220,53,69,0.1); color: var(--danger); padding: 5px 10px; border-radius: 15px; font-weight: bold; display: none;">🛡️ VETO ACTIF</div>
+                        <canvas id="realtimeChart"></canvas>
+                    </div>
+                    <button class="btn-cta" style="margin-top: 20px; font-size: 0.9rem; background:#333; width:100%" onclick="toggleRealtimeSim()" data-i18n="dash_btn">Lancer Test Stress (Bolus Fantôme)</button>
+                </div>
+                <div>
+                    <h3 data-i18n="dash_telemetry">Télémétrie C++</h3>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ddd;">
+                            <span>SENSOR_GLUCOSE</span> <span style="font-weight: bold;" id="rt-glucose">--</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ddd;">
+                            <span>IOB_STACK</span> <span style="font-weight: bold;" id="rt-ira">--</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ddd; background: #e6f7ff;">
+                            <span style="color: var(--niko-primary);">PRED_T+60</span> <span style="font-weight: bold; color: var(--niko-primary);" id="rt-pred">--</span>
+                        </div>
+                        <div style="margin-top: 20px; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background:white;">
+                            <span style="color: #888; font-size: 0.7rem;">STATUS</span><br>
+                            <strong id="rt-action" style="font-size: 1.1rem; color:var(--medtronic-blue);">MONITORING</strong>
+                        </div>
+                    </div>
+                    <pre style="margin-top:15px; height:120px;">if (pred < 90.0) {
+  // SENTINEL LOGIC
+  pump.suspend();
+  return VETO_OVERRIDE;
+}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="protocol" class="view-section">
+        <div class="doc-sheet">
+            <div style="border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; display:flex; justify-content:space-between;">
+                <div>
+                    <h2 style="color:var(--medtronic-blue)" data-i18n="proto_title">Protocole d'Intégration</h2>
+                    <div style="color:#666" data-i18n="proto_sub">Intégration Superviseur sur ARM Cortex-M</div>
+                </div>
+                <div style="text-align:right; font-family:'JetBrains Mono'; font-size:0.8rem; color:#888;">REF: SPEC-NIKO-V1<br>CLASS C SAFETY</div>
+            </div>
+
+            <h3 style="color:var(--medtronic-blue)">1. Architecture</h3>
+            <div class="arch-diagram">
+                <div class="arch-layer">LAYER 0<br><small>Hardware</small></div>
+                <div class="arch-layer">LAYER 1<br><small>SmartGuard (MPC)</small></div>
+                <div class="arch-layer niko-layer">LAYER 2 (NIKO)<br><small>Supervisor</small></div>
+            </div>
+
+            <h3 style="color:var(--medtronic-blue)">2. Implementation C++</h3>
+            <pre><span class="com">// ControlAlgorithm.cpp - Main Loop</span>
+<span class="typ">float</span> mpc_bolus = SmartGuard_Calculate(sensors);
+<span class="typ">NikoResult</span> res = Niko_Inference(&sensors_buffer); <span class="com">// < 50ms latence</span>
+
+<span class="kwd">if</span> (res.predicted_glucose < 90.0f) {
+    <span class="com">// FREINAGE D'URGENCE : Le modèle causal voit un risque invisible pour le MPC</span>
+    final_command = 0.0f; 
+    Log_Event(<span class="str">"NIKO_VETO: HYPO PREVENTED"</span>);
+} <span class="kwd">else</span> {
+    final_command = mpc_bolus;
+}</pre>
+
+            <div style="text-align: right; margin-top: 40px;">
+                <button class="btn-cta" onclick="downloadSDK()" data-i18n="download_btn">📥 Télécharger SDK C++ (.zip)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="presentation-mode">
+        <div class="slide active">
+            <div class="slide-content">
+                <div style="color:var(--niko-primary); letter-spacing:2px; font-weight:bold;">MEDTRONIC INTERNAL</div>
+                <h1 style="font-size:3.5rem; color:var(--medtronic-blue); margin:20px 0;">Le Futur de la Boucle Fermée</h1>
+                <p style="font-size:1.5rem; color:#555;">Comment l'Inférence Causale va rendre l'hypoglycémie obsolète.</p>
+                <i class="fas fa-arrow-right fa-2x" style="margin-top:30px; color:#ddd;"></i>
+            </div>
+        </div>
+        <div class="slide">
+            <div class="slide-content">
+                <h2 style="font-size:2.5rem; color:var(--medtronic-blue);">Le Plafond de Verre du MPC</h2>
+                <p style="font-size:1.3rem; margin:30px 0;">Le SmartGuard est excellent mais <strong>réactif</strong>. Il attend la déviation.</p>
+                <div style="display:flex; gap:20px; justify-content:center;">
+                    <div style="background:#f0f0f0; padding:30px; border-radius:10px; width:300px;">
+                        <div style="font-weight:bold; font-size:1.2rem;">MPC</div>
+                        <div>Corrélation</div>
+                        <div style="color:red; margin-top:10px;">Latence 15 min</div>
+                    </div>
+                    <div style="background:var(--medtronic-blue); color:white; padding:30px; border-radius:10px; width:300px;">
+                        <div style="font-weight:bold; font-size:1.2rem; color:var(--niko-primary);">NIKO</div>
+                        <div>Causalité ($do$)</div>
+                        <div style="color:var(--niko-accent); margin-top:10px;">Anticipation 45 min</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide">
+            <div class="slide-content">
+                <h2 style="font-size:2.5rem; color:var(--medtronic-blue);">Prêt pour l'Intégration</h2>
+                <p style="font-size:1.3rem;">SDK C++ optimisé pour ARM Cortex-M. Zero allocation dynamique.</p>
+                <button class="btn-cta" onclick="exitPresentation()">Accéder à la Console R&D</button>
+            </div>
+        </div>
+
+        <div class="pres-controls">
+            <div style="font-weight:bold;">NIKO AI</div>
+            <div>
+                <button class="pres-btn" onclick="prevSlide()"><i class="fas fa-chevron-left"></i></button>
+                <span id="slide-count" style="margin:0 15px;">1 / 3</span>
+                <button class="pres-btn" onclick="nextSlide()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <button class="pres-btn" style="background:var(--danger);" onclick="exitPresentation()">X</button>
+        </div>
+    </div>
+
+    <script>
+        // --- TRANSLATION DATA ---
+        const i18n={fr:{auth_title:"Accès Ingénierie",auth_sub:"Portail sécurisé R&D Medtronic.",auth_btn:"Authentifier",lock_btn:"Engineering Access",nav_1:"1. VISION",nav_2:"2. CONSOLE R&D",nav_3:"3. PROTOCOLE",hero_title:"Mise à jour Causale <br>pour Architecture 780G",hero_desc:"Protocole d'intégration du superviseur NIKO pour éliminer l'hypoglycémie par anticipation causale.",hero_cta:"Lancer la Comparaison",card1_title:"Limite SmartGuard™",card1_desc:"Réactif. Latence de 15 min sur événements soudains.",card2_title:"Solution NIKO",card2_desc:"Causalité ($do$). Freinage 45 min avant l'hypo.",dash_title:"Console R&D : Hardware-in-the-Loop",dash_btn:"Lancer Test Stress",dash_telemetry:"Télémétrie C++",proto_title:"Protocole d'Intégration",proto_sub:"Intégration Superviseur sur ARM Cortex-M",download_btn:"📥 Télécharger SDK C++ (.zip)"},en:{auth_title:"Engineering Access",auth_sub:"Secure Medtronic R&D Portal.",auth_btn:"Authenticate",lock_btn:"R&D Unlocked",nav_1:"1. VISION",nav_2:"2. R&D CONSOLE",nav_3:"3. PROTOCOL",hero_title:"Causal Upgrade <br>for 780G Architecture",hero_desc:"Integration protocol for NIKO supervisor to eliminate hypoglycemia via causal anticipation.",hero_cta:"Run Comparison",card1_title:"SmartGuard™ Limit",card1_desc:"Reactive. 15 min latency on sudden events.",card2_title:"NIKO Solution",card2_desc:"Causality ($do$). Braking 45 min prior.",dash_title:"R&D Console: Hardware-in-the-Loop",dash_btn:"Start Stress Test",dash_telemetry:"C++ Telemetry",proto_title:"Integration Protocol",proto_sub:"Supervisor integration on ARM Cortex-M",download_btn:"📥 Download C++ SDK (.zip)"}};
+        function setLang(l){document.querySelectorAll('[data-i18n]').forEach(e=>e.innerHTML=i18n[l][e.getAttribute('data-i18n')]||e.innerHTML);document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
+        
+        // --- SECURITY ---
+        function openSecurity(){document.getElementById('securityModal').style.display='flex';}
+        function verifyAccess(){
+            document.getElementById('securityModal').style.display='none';
+            document.getElementById('main-nav').style.display='flex';
+            document.getElementById('confidentialBtn').classList.add('unlocked');
+            document.getElementById('confidentialBtn').innerHTML='<i class="fas fa-unlock"></i> R&D ACCESS GRANTED';
+            switchView('dashboard');
+        }
+
+        // --- NAVIGATION ---
+        function switchView(id){
+            document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+            if(id==='vision')document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(id==='dashboard'){document.querySelectorAll('.nav-item')[1].classList.add('active');if(rtChart)rtChart.resize();}
+            if(id==='protocol')document.querySelectorAll('.nav-item')[2].classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // --- PRESENTATION MODE ---
+        let slideIdx=0; const slides=document.querySelectorAll('.slide');
+        function startPresentation(){document.getElementById('presentation-mode').style.display='flex';showSlide(0);}
+        function exitPresentation(){document.getElementById('presentation-mode').style.display='none';}
+        function showSlide(n){slides.forEach(s=>s.classList.remove('active'));slides[n].classList.add('active');document.getElementById('slide-count').innerText=(n+1)+"/"+slides.length;slideIdx=n;}
+        function nextSlide(){if(slideIdx<slides.length-1)showSlide(slideIdx+1);}
+        function prevSlide(){if(slideIdx>0)showSlide(slideIdx-1);}
+        document.addEventListener('keydown',(e)=>{if(document.getElementById('presentation-mode').style.display==='flex'){if(e.key==="ArrowRight")nextSlide();if(e.key==="ArrowLeft")prevSlide();if(e.key==="Escape")exitPresentation();}});
+
+        // --- CHART 1: MARKETING ---
+        const mChart = new Chart(document.getElementById('marketingChart'), {type:'line',data:{labels:Array.from({length:60},(_,i)=>i+"m"),datasets:[{label:'SmartGuard (MPC)',data:[],borderColor:'#999',borderWidth:2,pointRadius:0},{label:'NIKO (Causal)',data:[],borderColor:'#00A3E0',backgroundColor:'rgba(0,163,224,0.1)',borderWidth:3,pointRadius:0,fill:true}]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{y:{min:50,max:180},x:{display:false}}}});
+        function startMarketingDemo(){
+            let d1=140,d2=140,i=0; mChart.data.datasets[0].data=[140]; mChart.data.datasets[1].data=[140];
+            const int=setInterval(()=>{if(i>60)clearInterval(int);let dr=-1.5,a1=(i>15&&d1<110)?0.8:0,a2=(i>5)?1.2:0;d1+=dr+a1;if(d1<65)d1+=1;d2+=dr+a2;if(d2<85)d2=85+Math.random();mChart.data.datasets[0].data.push(d1);mChart.data.datasets[1].data.push(d2);mChart.update();i++;},30);
+        }
+
+        // --- CHART 2: REALTIME ---
+        const rtChart = new Chart(document.getElementById('realtimeChart'), {type:'line',data:{labels:Array(50).fill(''),datasets:[{label:'Glucose',data:Array(50).fill(null),borderColor:'#333',borderWidth:2,pointRadius:0},{label:'Pred NIKO',data:Array(50).fill(null),borderColor:'#00A3E0',borderDash:[4,4],borderWidth:2,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{y:{min:40,max:250}}}});
+        let rtInt,g=110,tr=0,ira=1.0,tk=0;
+        function toggleRealtimeSim(){
+            if(rtInt){clearInterval(rtInt);rtInt=null;return;}
+            rtInt=setInterval(()=>{tk++;if(tk%20===10)tr=-2;if(tk%20===15&&g<100)tr=1;g+=tr+(Math.random()-0.5);if(ira>0)ira-=0.05;
+            let pred=g+(tr*5)-(ira*3),act="MONITORING",shield=document.getElementById('shield-indicator');
+            if(pred<90){act="VETO ACTIF";shield.style.display="block";tr+=0.2;}else{shield.style.display="none";}
+            document.getElementById('rt-glucose').innerText=Math.floor(g);document.getElementById('rt-ira').innerText=ira.toFixed(1);document.getElementById('rt-pred').innerText=Math.floor(pred);document.getElementById('rt-action').innerText=act;
+            let d1=rtChart.data.datasets[0].data,d2=rtChart.data.datasets[1].data;d1.push(g);d1.shift();d2.push(pred);d2.shift();rtChart.update();},200);
+        }
+
+        // --- ZIP GENERATOR ---
+        function downloadSDK(){
+            var zip=new JSZip(),sdk=zip.folder("NIKO_SDK_v1");
+            sdk.folder("include").file("niko_api.h","#ifndef NIKO_H\n#define NIKO_H\n// API Header\n#endif");
+            sdk.folder("src").file("niko_core.cpp","#include \"niko_api.h\"\n// Causal Logic\n");
+            zip.generateAsync({type:"blob"}).then(c=>saveAs(c,"NIKO_Medtronic_SDK.zip"));
+        }
+
+        // --- GOOGLE TRANSLATE INIT ---
+        function googleTranslateElementInit(){new google.translate.TranslateElement({pageLanguage:'fr',layout:google.translate.TranslateElement.InlineLayout.SIMPLE},'google_translate_element');}
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+</html>
